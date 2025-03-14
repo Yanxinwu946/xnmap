@@ -23,7 +23,7 @@ sudo apt update && sudo apt install -y nmap grc
 
 ### 复制脚本到 `/usr/local/bin/`
 ```bash
-git clone https://github.com/yourrepo/xnmap.git
+git clone https://github.com/Yanxinwu946/xnmap.git
 sudo cp xnmap/nmap_scan.sh /usr/local/bin/xnmap
 sudo chmod +x /usr/local/bin/xnmap
 ```
