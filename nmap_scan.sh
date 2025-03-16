@@ -28,6 +28,7 @@ usage() {
 sigint() {
     echo -e "\n\n${redColour}[*] Exiting${endColour}"
     tput cnorm
+    rm -f alive_hosts.txt 2>/dev/null
     exit 1
 }
 trap sigint INT
@@ -119,6 +120,58 @@ discover_hosts() {
     fi
 }
 
+# 函数：用户选择扫描目标
+select_scan_targets() {
+    local ips=()
+    while IFS= read -r ip; do
+        ips+=("$ip")
+    done < alive_hosts.txt
+
+    echo -e "${yellowColour}Host discovery completed. Select scanning option:${endColour}"
+    echo -e "  - Enter IPs separated by commas to scan specific hosts (e.g., ${ips[0]},${ips[1]})"
+    echo -e "  - Press Enter to scan all discovered hosts"
+    echo -e "  - Press Ctrl+C to exit"
+    read -p "Your choice: " choice
+
+    if [ -z "$choice" ]; then
+        # 回车，扫描全部
+        echo -e "${greenColour}Scanning all discovered hosts:${endColour}"
+        for ip in "${ips[@]}"; do
+            scan_ip "$ip"
+        done
+    else
+        # 将用户输入按逗号分隔成数组
+        IFS=',' read -r -a selected_ips <<< "$choice"
+        local valid_ips=()
+        local invalid_ips=()
+
+        # 检查每个输入的 IP 是否有效
+        for input_ip in "${selected_ips[@]}"; do
+            # 去除前后空格
+            input_ip=$(echo "$input_ip" | tr -d '[:space:]')
+            if echo "${ips[@]}" | grep -w "$input_ip" >/dev/null; then
+                valid_ips+=("$input_ip")
+            else
+                invalid_ips+=("$input_ip")
+            fi
+        done
+
+        # 如果有无效 IP，提示用户
+        if [ ${#invalid_ips[@]} -gt 0 ]; then
+            echo -e "${redColour}Error: The following IPs are not in the discovered hosts list: ${invalid_ips[*]}${endColour}"
+        fi
+
+        # 如果有有效 IP，进行扫描
+        if [ ${#valid_ips[@]} -gt 0 ]; then
+            echo -e "${greenColour}Scanning selected IPs: ${valid_ips[*]}${endColour}"
+            for ip in "${valid_ips[@]}"; do
+                scan_ip "$ip"
+            done
+        fi
+    fi
+    rm -f alive_hosts.txt
+}
+
 # 主逻辑：解析参数
 check_tools
 MODE=""
@@ -157,11 +210,7 @@ case "$MODE" in
         ;;
     subnet)
         discover_hosts "$TARGET"
-        echo -e "${greenColour}Scanning discovered hosts:${endColour}"
-        while IFS= read -r ip; do
-            scan_ip "$ip"
-        done < alive_hosts.txt
-        rm -f alive_hosts.txt
+        select_scan_targets
         ;;
 esac
 
