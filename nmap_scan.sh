@@ -52,7 +52,7 @@ run_nmap() {
     local output="$3"
     echo -e "${yellowColour}Running on $ip: $cmd${endColour}"
     if command -v grc >/dev/null 2>&1; then
-        grc "$cmd"
+        grc bash -c "$cmd"
     else
         eval "$cmd"
     fi
@@ -99,7 +99,7 @@ scan_ip() {
     fi
 }
 
-# 函数：主机发现
+# 函数：主机发现 (使用 nmap -sn)
 discover_hosts() {
     local SUBNET="$1"
     echo -e "${yellowColour}Discovering hosts in $SUBNET...${endColour}"
