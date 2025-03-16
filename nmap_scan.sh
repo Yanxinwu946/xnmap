@@ -35,14 +35,8 @@ trap sigint INT
 
 # 检查工具可用性
 check_tools() {
-    local missing_tools=()
-    for tool in fping nmap; do
-        if ! command -v "$tool" >/dev/null 2>&1; then
-            missing_tools+=("$tool")
-        fi
-    done
-    if [ ${#missing_tools[@]} -ne 0 ]; then
-        echo -e "${redColour}Error: Missing required tools: ${missing_tools[*]}. Please install them.${endColour}"
+    if ! command -v nmap >/dev/null 2>&1; then
+        echo -e "${redColour}Error: 'nmap' is required but not installed. Please install it.${endColour}"
         exit 1
     fi
 
@@ -58,7 +52,7 @@ run_nmap() {
     local output="$3"
     echo -e "${yellowColour}Running on $ip: $cmd${endColour}"
     if command -v grc >/dev/null 2>&1; then
-        eval "grc $cmd"
+        grc "$cmd"
     else
         eval "$cmd"
     fi
@@ -109,7 +103,7 @@ scan_ip() {
 discover_hosts() {
     local SUBNET="$1"
     echo -e "${yellowColour}Discovering hosts in $SUBNET...${endColour}"
-    fping -agq "$SUBNET" 2>/dev/null > alive_hosts.txt
+    nmap -sn "$SUBNET" -oG - | grep "Up" | awk '{print $2}' > alive_hosts.txt
     if [ -s alive_hosts.txt ]; then
         echo -e "${greenColour}Found $(wc -l < alive_hosts.txt) alive hosts:${endColour}"
         cat alive_hosts.txt
@@ -134,20 +128,16 @@ select_scan_targets() {
     read -p "Your choice: " choice
 
     if [ -z "$choice" ]; then
-        # 回车，扫描全部
         echo -e "${greenColour}Scanning all discovered hosts:${endColour}"
         for ip in "${ips[@]}"; do
             scan_ip "$ip"
         done
     else
-        # 将用户输入按逗号分隔成数组
         IFS=',' read -r -a selected_ips <<< "$choice"
         local valid_ips=()
         local invalid_ips=()
 
-        # 检查每个输入的 IP 是否有效
         for input_ip in "${selected_ips[@]}"; do
-            # 去除前后空格
             input_ip=$(echo "$input_ip" | tr -d '[:space:]')
             if echo "${ips[@]}" | grep -w "$input_ip" >/dev/null; then
                 valid_ips+=("$input_ip")
@@ -156,12 +146,10 @@ select_scan_targets() {
             fi
         done
 
-        # 如果有无效 IP，提示用户
         if [ ${#invalid_ips[@]} -gt 0 ]; then
             echo -e "${redColour}Error: The following IPs are not in the discovered hosts list: ${invalid_ips[*]}${endColour}"
         fi
 
-        # 如果有有效 IP，进行扫描
         if [ ${#valid_ips[@]} -gt 0 ]; then
             echo -e "${greenColour}Scanning selected IPs: ${valid_ips[*]}${endColour}"
             for ip in "${valid_ips[@]}"; do
