@@ -1,6 +1,6 @@
 # Xnmap：自动化 Nmap 安全扫描脚本
 
-[![Author]()](https://github.com/Yanxinwu946/)
+[![Author](https://img.shields.io/badge/Author-Yanxinwu946-blue.svg)](https://github.com/Yanxinwu946/)
 
 **Xnmap** 是一款强大且高效的 Bash 脚本，专为自动化 Nmap 扫描而设计，能够执行主机发现、端口枚举、服务版本检测、操作系统识别、漏洞扫描以及 HTTP 目录扫描等关键安全评估任务。其开发灵感来源于个人打靶机实战经验，旨在提升渗透测试效率，并为通过 OSCP 认证考试提供便利。
 
@@ -37,7 +37,7 @@
 * `grc`（使 Nmap 和 Gobuster 输出变得多彩 🥰，可选）
 * `seclists`（用于 HTTP 目录扫描的字典，完整扫描模式需要）
 
-在 Debian/Ubuntu 系统上，你可以使用以下命令安装依赖：
+在 Debian/Ubuntu 上安装：
 
 ```bash
 sudo apt update && sudo apt install -y nmap gobuster grc seclists
@@ -45,49 +45,31 @@ sudo apt update && sudo apt install -y nmap gobuster grc seclists
 
 ### 复制脚本
 
-您可以将脚本保存到您喜欢的任何可执行路径，例如 `/usr/local/bin/`：
-
 ```bash
 chmod +x <脚本名称>.sh
-sudo mv <脚本名称>.sh /usr/local/bin/autonmapscan
+sudo mv <脚本名称>.sh /usr/local/bin/xnmap
 ```
-
-之后，您就可以直接使用 `autonmapscan` 命令运行脚本了。
 
 ## 使用方法
 
 ```bash
-autonmapscan [选项]
+xnmap [选项]
 ```
 
 ### 选项
 
-* `-i <IP>`：扫描指定的单个 IP 地址。例如：`autonmapscan -i 192.168.56.10`
-* `-f <file>`：从指定的文件中读取 IP 地址列表进行扫描，每行一个 IP。例如：`autonmapscan -f targets.txt`
-* `-s <subnet>`：发现并扫描指定子网中的所有活跃主机。脚本将在发现主机后提示您选择要扫描的目标。例如：`autonmapscan -s 192.168.1.0/24`
-* `-l`：启用轻量级扫描模式，仅执行全端口扫描。
-* `-m`：启用慢速模式，降低扫描速率（`min-rate 2000`, `T3 timing`）。
-* `-h`：显示帮助信息。
+* `-i <IP>`：扫描单个 IP。
+* `-f <file>`：从文件读取 IP 列表。
+* `-s <subnet>`：扫描子网。
+* `-l`：轻量级扫描 (仅端口)。
+* `-m`：慢速模式。
+* `-h`：显示帮助。
 
 ### 示例
 
-* 扫描单个 IP 地址并进行完整扫描：
-    ```bash
-    autonmapscan -i 192.168.1.100
-    ```
-* 从文件 `targets.txt` 中读取 IP 列表并进行轻量级扫描：
-    ```bash
-    autonmapscan -f targets.txt -l
-    ```
-* 发现 `192.168.0.0/24` 子网中的主机并进行完整慢速扫描：
-    ```bash
-    autonmapscan -s 192.168.0.0/24 -m
-    ```
-* 发现子网中的主机，并选择性地扫描部分主机进行完整扫描：
-    ```bash
-    autonmapscan -s 10.0.1.0/24
-    ```
-    （脚本将提示您输入要扫描的 IP 地址）
+* `xnmap -i 192.168.1.100`
+* `xnmap -f targets.txt -l`
+* `xnmap -s 192.168.0.0/24 -m`
 
 ### 结果输出
 
@@ -98,6 +80,7 @@ autonmapscan [选项]
 * `udp.nmap`：UDP 端口扫描结果。
 * `vuln.nmap`：漏洞扫描结果（仅在完整扫描模式下，且发现常见开放端口时生成）。
 * `godir<端口号>.txt`：Gobuster 在 HTTP 服务端口上发现的目录和文件（仅在完整扫描模式下，且发现 HTTP 服务时生成）。
+
 
 ## 工作流程
 
@@ -111,9 +94,6 @@ autonmapscan [选项]
 4. **选择扫描函数**：根据 `-l` 参数选择执行 `lightweight_scan` 或 `full_scan` 函数。
 5. **执行扫描**：
     * **轻量级扫描**：执行全端口扫描。
-        ```bash
-        nmap -p- --min-rate <MIN_RATE> <TIMING> -Pn -n -v -oN enum_<IP>/ports <IP>
-        ```
     * **完整扫描**：
         * 执行全端口扫描。
         * 解析开放端口。
